@@ -1,0 +1,6 @@
+service:
+  name: 'recommender-system'
+  version: '0.0.1'
+  component: 'backend'
+  api_host: "127.0.0.1"
+  port: 8092
