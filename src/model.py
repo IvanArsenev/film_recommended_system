@@ -1,15 +1,9 @@
 import pandas as pd
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.neighbors import NearestNeighbors
-from typing import List, Tuple
 import numpy as np
 import pickle
 from scipy.sparse.linalg import svds
 from sklearn.metrics import mean_squared_error
 import logging
-from sklearn.preprocessing import StandardScaler
-from implicit.als import AlternatingLeastSquares
-from scipy.sparse import csr_matrix
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)

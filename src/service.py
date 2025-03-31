@@ -19,27 +19,6 @@ app = FastAPI()
 recommender_by_user = MovieRecommender("./data/ratings_train.dat", "./data/movies.dat")
 
 
-@app.get("/recommended_list/{film_id}")
-async def make_prediction(
-    film_id: int, count: Optional[int] = 10
-) -> List[Tuple[int, str]]:
-    """
-    Получает список рекомендованных фильмов на основе заданного фильма.
-
-    :param film_id: ID фильма, на основе которого будут сделаны рекомендации.
-    :param count: Количество рекомендованных фильмов (по умолчанию 10).
-    :return: Список кортежей (ID фильма, название фильма), представляющий рекомендации.
-    """
-    logger.info(f"Получение рекомендаций для фильма с ID {film_id}, количество: {count}")
-    result = recommended_model.get_similar_movies_nn(movie_id=film_id, top_n=count)
-
-    return_data = [(int(f_id), title) for f_id, title in result]
-
-    logger.info(f"Рекомендации для фильма {film_id}: {return_data}")
-
-    return return_data
-
-
 @app.get("/collaborative_filtering/{user_id}")
 async def make_prediction_for_user(
     user_id: int, count: Optional[int] = 10
