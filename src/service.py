@@ -8,14 +8,14 @@ from model import MovieRecommender
 from typing import Optional, List, Tuple
 import logging
 
-# Настройка логгера
+# Logger setup
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Инициализация приложения FastAPI
+# Initialize FastAPI app
 app = FastAPI()
 
-# Инициализация моделей
+# Initialize models
 recommender_by_user = MovieRecommender("./data/ratings_train.dat", "./data/movies.dat")
 
 
@@ -24,57 +24,57 @@ async def make_prediction_for_user(
     user_id: int, count: Optional[int] = 10
 ) -> List[Tuple[int, str]]:
     """
-    Получает список рекомендованных фильмов для пользователя на основе его предпочтений.
+    Retrieves a list of recommended movies for a user based on their preferences.
 
-    :param user_id: ID пользователя, для которого будут сделаны рекомендации.
-    :param count: Количество рекомендованных фильмов (по умолчанию 10).
-    :return: Список кортежей (ID фильма, название фильма), представляющий рекомендации для пользователя.
+    :param user_id: ID of the user for whom the recommendations will be generated.
+    :param count: Number of recommended movies (default is 10).
+    :return: A list of tuples (movie ID, movie title) representing the recommendations for the user.
     """
     recommendations = recommender_by_user.recommend_movies(user_id, count)
-    logger.info(f"Рекомендации для пользователя {user_id}: {recommendations}")
+    logger.info(f"Recommendations for user {user_id}: {recommendations}")
     return_data = list(recommendations.itertuples(index=False, name=None))
     return return_data
 
 
-@app.get("/retrain_model")
+@app.post("/retrain_model")
 async def retrain_model():
     """
-    Переобучает модель рекомендаций.
+    Retrains the recommendation model.
 
-    Эта функция запускает процесс переобучения модели рекомендаций, используя текущие данные.
+    This function starts the retraining process using the current data.
 
-    :return: Сообщение об успехе и точность модели.
+    :return: A success message and the model's RMSE score.
     """
     rmse_score = recommender_by_user.train()
-    logger.info(f"Модель была переобучена. RMSE: {rmse_score}")
-    return f"Модель была переобучена. RMSE: {rmse_score}"
+    logger.info(f"Model retrained. RMSE: {rmse_score}")
+    return f"Model retrained. RMSE: {rmse_score}"
 
 
 def start() -> None:
     """
-    Запускает сервис с конфигурацией, указанной в конфигурационном файле.
+    Starts the service using configuration specified in the config file.
 
-    Загружает параметры из конфигурационного файла и запускает сервер FastAPI с использованием
-    указанного хоста и порта.
+    Loads parameters from the configuration file and launches the FastAPI server using
+    the specified host and port.
     """
-    ap = argparse.ArgumentParser(description="Запуск сервиса с конфигурационным файлом.")
+    ap = argparse.ArgumentParser(description="Run the service with a configuration file.")
     ap.add_argument(
-        '-c', '--config', type=str, required=True, help='Путь к конфигурационному файлу.'
+        '-c', '--config', type=str, required=True, help='Path to the configuration file.'
     )
 
     options, _ = ap.parse_known_args(sys.argv[1:])
 
     if not os.path.isfile(options.config):
-        logger.error(f"Конфигурационный файл {options.config} не существует.")
+        logger.error(f"Configuration file {options.config} does not exist.")
         sys.exit(1)
 
     with open(options.config, 'r') as file:
         config = yaml.safe_load(file)
 
-    logger.info(f"Конфигурация загружена из {options.config}.")
+    logger.info(f"Configuration loaded from {options.config}.")
 
     uvicorn.run(app, host=config["service"]["api_host"], port=config["service"]["port"])
-    logger.info(f"Запуск сервера на {config['service']['api_host']}:{config['service']['port']}.")
+    logger.info(f"Server running on {config['service']['api_host']}:{config['service']['port']}.")
 
 
 if __name__ == '__main__':

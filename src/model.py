@@ -21,7 +21,7 @@ class MovieRecommender:
         self.fill = fill
         self.user_movie_matrix = self.ratings.pivot(index="userId", columns="movieId", values="rating")
 
-        # Заполнение пропущенных значений в user_movie_matrix в зависимости от параметра fill
+        # Fill missing values in user_movie_matrix depending on the fill parameter
         if self.fill == 'mean':
             self.user_movie_matrix = self.user_movie_matrix.fillna(self.user_movie_matrix.mean())
         else:
@@ -31,34 +31,34 @@ class MovieRecommender:
         self.predicted_ratings_df = None
 
     def train(self, test_ratings_path='./data/ratings_test.dat'):
-        # Нормализация данных (в зависимости от параметра norm)
+        # Normalize data (depending on the norm parameter)
         if self.norm == 'user':
             user_movie_matrix_mean = self.user_movie_matrix.mean(axis=1)
             R_centered = self.R - user_movie_matrix_mean.values.reshape(-1, 1)
         else:
             R_centered = self.R
 
-        # Выполнение SVD на нормализованных данных
+        # Perform SVD on the normalized data
         U, sigma, Vt = svds(R_centered, k=self.k)
         sigma = np.diag(sigma)
 
-        # Восстановление предсказанных оценок
+        # Reconstruct predicted ratings
         predicted_ratings = np.dot(np.dot(U, sigma), Vt) + user_movie_matrix_mean.values.reshape(-1, 1) if self.norm == 'user' else np.dot(np.dot(U, sigma), Vt)
 
         self.predicted_ratings_df = pd.DataFrame(predicted_ratings, index=self.user_movie_matrix.index,
                                                  columns=self.user_movie_matrix.columns)
 
-        # Сохранение модели
+        # Save the model
         with open("svd_model.pkl", "wb") as f:
             pickle.dump(self.predicted_ratings_df, f)
 
-        logger.info("Обучение завершено! Модель сохранена в svd_model.pkl")
+        logger.info("Training completed! Model saved to svd_model.pkl")
 
-        # Оценка модели с использованием тестовых данных
+        # Evaluate the model using test data
         test_ratings = pd.read_csv(test_ratings_path, sep="::", names=["userId", "movieId", "rating", "timestamp"],
                                    engine="python")
 
-        # Предсказания для тестовых данных
+        # Predictions for the test data
         predictions = []
         true_ratings = []
 
@@ -67,19 +67,19 @@ class MovieRecommender:
             movie_id = row['movieId']
             true_rating = row['rating']
 
-            # Проверка, есть ли в предсказаниях оценка для данного пользователя и фильма
+            # Check if a prediction exists for this user and movie
             if user_id in self.predicted_ratings_df.index and movie_id in self.predicted_ratings_df.columns:
                 predicted_rating = self.predicted_ratings_df.loc[user_id, movie_id]
             else:
-                # Если предсказание отсутствует, ставим среднее значение для фильма
+                # If there's no prediction, use the average rating for the movie
                 predicted_rating = self.predicted_ratings_df[movie_id].mean()
 
             predictions.append(predicted_rating)
             true_ratings.append(true_rating)
 
-        # Рассчитываем RMSE
+        # Calculate RMSE
         rmse = np.sqrt(mean_squared_error(true_ratings, predictions))
-        logger.info(f"RMSE на тестовых данных: {rmse}")
+        logger.info(f"RMSE on test data: {rmse}")
         return rmse
 
     def load_model(self, model_path="svd_model.pkl"):
@@ -88,10 +88,10 @@ class MovieRecommender:
 
     def recommend_movies(self, user_id, N=10):
         if self.predicted_ratings_df is None:
-            raise ValueError("Модель не загружена или не обучена")
+            raise ValueError("Model is not loaded or trained")
 
         if user_id not in self.predicted_ratings_df.index:
-            return "Нет данных для пользователя"
+            return "No data for the user"
 
         user_ratings = self.predicted_ratings_df.loc[user_id]
 
